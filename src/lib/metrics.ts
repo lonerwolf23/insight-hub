@@ -1,6 +1,6 @@
 import type { Post, Profile } from "./types";
 
-export type Granularity = "month" | "quarter" | "year";
+export type Granularity = "day" | "month" | "quarter" | "year";
 
 export interface PostTypeSlice {
   type: string;
@@ -64,15 +64,20 @@ export interface ProfileMetrics {
   postTypes: PostTypeSlice[];
   topHashtags: HashtagSlice[];
   uniqueHashtags: number;
+  daily: SeriesPoint[];
   monthly: SeriesPoint[];
   quarterly: SeriesPoint[];
   yearly: SeriesPoint[];
   firstPostDate: string | null;
   lastPostDate: string | null;
   reelHourly: HourSlice[];
+  postHourly: HourSlice[];
   weekday: DaySlice[];
   bestReelHour: HourSlice | null;
+  bestPostHour: HourSlice | null;
   bestDay: DaySlice | null;
+  bestReelDay: DaySlice | null;
+  bestPostDay: DaySlice | null;
 }
 
 const POST_TYPE_LABELS: Record<string, string> = {
@@ -89,6 +94,10 @@ function parseKey(key: string, g: Granularity): Date {
     const [y, q] = key.split("-Q").map(Number);
     return new Date(y, (q - 1) * 3, 1);
   }
+  if (g === "day") {
+    const [y, m, d] = key.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
   const [y, m] = key.split("-").map(Number);
   return new Date(y, m - 1, 1);
 }
@@ -97,6 +106,8 @@ function keyOf(d: Date, g: Granularity): string {
   const y = d.getFullYear();
   if (g === "year") return String(y);
   if (g === "quarter") return `${y}-Q${Math.floor(d.getMonth() / 3) + 1}`;
+  if (g === "day")
+    return `${y}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   return `${y}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
@@ -105,6 +116,8 @@ function labelOf(key: string, g: Granularity): string {
   if (g === "year") return String(d.getFullYear());
   if (g === "quarter")
     return `Q${Math.floor(d.getMonth() / 3) + 1} '${String(d.getFullYear()).slice(2)}`;
+  if (g === "day")
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   return d.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
 }
 
@@ -112,6 +125,7 @@ function advance(d: Date, g: Granularity): Date {
   const next = new Date(d);
   if (g === "year") next.setFullYear(next.getFullYear() + 1);
   else if (g === "quarter") next.setMonth(next.getMonth() + 3);
+  else if (g === "day") next.setDate(next.getDate() + 1);
   else next.setMonth(next.getMonth() + 1);
   return next;
 }
@@ -134,6 +148,11 @@ function buildSeries(posts: Post[], g: Granularity): SeriesPoint[] {
   }
   const keys = [...map.keys()].sort();
   if (keys.length === 0) return [];
+  if (g === "day") {
+    // Sparse: only actual posting dates, not every calendar day in between —
+    // some accounts span a decade, so filling daily zeros would blow up the chart.
+    return keys.map((key) => map.get(key)!);
+  }
   // Fill gaps so the line chart is continuous (dormant periods show as zero).
   const out: SeriesPoint[] = [];
   let cursor = parseKey(keys[0], g);
@@ -228,6 +247,14 @@ function pickBestDay(days: DaySlice[]): DaySlice | null {
   return withPosts.reduce((a, b) => (avgOf(b) > avgOf(a) ? b : a));
 }
 
+function pickBestDayBy(days: DaySlice[], kind: "reel" | "post"): DaySlice | null {
+  const countOf = (d: DaySlice) => (kind === "reel" ? d.reelPosts : d.postPosts);
+  const avgOf = (d: DaySlice) => (kind === "reel" ? d.reelAvgEngagement : d.postAvgEngagement);
+  const withPosts = days.filter((d) => countOf(d) > 0);
+  if (withPosts.length === 0) return null;
+  return withPosts.reduce((a, b) => (avgOf(b) > avgOf(a) ? b : a));
+}
+
 /* ------------------------------ main entry ------------------------------ */
 
 export function computeMetrics(profile: Profile): ProfileMetrics {
@@ -266,6 +293,7 @@ export function computeMetrics(profile: Profile): ProfileMetrics {
     .map(([tag, count]) => ({ tag, count }));
 
   const reelHourly = buildHourly(posts.filter(isReel));
+  const postHourly = buildHourly(posts.filter((p) => !isReel(p)));
   const weekday = buildWeekday(posts);
 
   return {
@@ -297,14 +325,19 @@ export function computeMetrics(profile: Profile): ProfileMetrics {
     postTypes,
     topHashtags,
     uniqueHashtags: tagCounts.size,
+    daily: buildSeries(posts, "day"),
     monthly: buildSeries(posts, "month"),
     quarterly: buildSeries(posts, "quarter"),
     yearly: buildSeries(posts, "year"),
     firstPostDate: analyzedPosts ? posts[analyzedPosts - 1].timestamp : null,
     lastPostDate: analyzedPosts ? posts[0].timestamp : null,
     reelHourly,
+    postHourly,
     weekday,
     bestReelHour: pickBestHour(reelHourly),
+    bestPostHour: pickBestHour(postHourly),
     bestDay: pickBestDay(weekday),
+    bestReelDay: pickBestDayBy(weekday, "reel"),
+    bestPostDay: pickBestDayBy(weekday, "post"),
   };
 }

@@ -10,6 +10,7 @@ import {
   Clock,
   ExternalLink,
   FileText,
+  Globe,
   Heart,
   Loader2,
   Lock,
@@ -25,12 +26,15 @@ import Link from "next/link";
 import { AnimatedNumber } from "@/components/CountUp";
 import { ChartCard } from "@/components/ChartCard";
 import { CommentsPanel } from "@/components/CommentsPanel";
+import { PostingRecommendation } from "@/components/PostingRecommendation";
 import { PostsTable } from "@/components/PostsTable";
 import { ProfileImage } from "@/components/ProfileImage";
 import { StatTile } from "@/components/StatTile";
 import { BestReelHour } from "@/components/charts/BestReelHour";
 import { CompareBars } from "@/components/charts/CompareBars";
 import { EngagementTrend } from "@/components/charts/EngagementTrend";
+import { GlobalPostWindowChart } from "@/components/charts/GlobalPostWindow";
+import { GlobalReelTimes } from "@/components/charts/GlobalReelTimes";
 import { PostTypeDonut } from "@/components/charts/PostTypeDonut";
 import { PostsByMonth } from "@/components/charts/PostsByMonth";
 import { TopHashtags } from "@/components/charts/TopHashtags";
@@ -240,7 +244,12 @@ export default function ProfileDetailPage() {
           className="lg:col-span-2"
         >
           <EngagementTrend
-            seriesByGranularity={{ month: m.monthly, quarter: m.quarterly, year: m.yearly }}
+            seriesByGranularity={{
+              day: m.daily,
+              month: m.monthly,
+              quarter: m.quarterly,
+              year: m.yearly,
+            }}
           />
         </ChartCard>
         <ChartCard title="Post types" description="Breakdown by content format">
@@ -260,6 +269,9 @@ export default function ProfileDetailPage() {
           <TopHashtags data={m.topHashtags} />
         </ChartCard>
       </div>
+
+      {/* recommended posting time */}
+      <PostingRecommendation />
 
       {/* best time to post */}
       <div className="grid gap-4 lg:grid-cols-2">
@@ -308,6 +320,39 @@ export default function ProfileDetailPage() {
             height={220}
           />
         </ChartCard>
+      </div>
+
+      {/* global benchmark — industry research, not this account's data */}
+      <div className="glass p-5">
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <Globe className="h-4 w-4 text-accent" />
+          <h3 className="font-display text-sm font-semibold tracking-tight">
+            Global best time to post
+          </h3>
+          <span className="label-mono ml-auto text-faint">industry benchmark, not @{m.username}</span>
+        </div>
+        <p className="mb-4 max-w-3xl text-xs leading-relaxed text-muted">
+          Aggregated from published cross-account Instagram research covering millions of posts —
+          not derived from this profile&apos;s own history. Use it as a starting point; actual
+          results vary by audience, niche and time zone.
+        </p>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ChartCard
+            title="Reels — peak hours by day, worldwide"
+            description="SocialPilot: ~250K Reels across 30K+ connected accounts"
+          >
+            <GlobalReelTimes />
+          </ChartCard>
+          <ChartCard
+            title="Posts — peak windows by day, worldwide"
+            description="Sprout Social: ~2B engagements across 307K profiles"
+          >
+            <GlobalPostWindowChart />
+          </ChartCard>
+        </div>
+        <p className="mt-4 text-[11px] leading-relaxed text-faint">
+          Fridays show no significant peak and weekends are the weakest days across both studies.
+        </p>
       </div>
 
       {/* posts table */}

@@ -17,6 +17,7 @@ import { formatCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const GRANULARITIES: { value: Granularity; label: string }[] = [
+  { value: "day", label: "Day" },
   { value: "month", label: "Month" },
   { value: "quarter", label: "Quarter" },
   { value: "year", label: "Year" },
@@ -27,7 +28,7 @@ interface EngagementTrendProps {
 }
 
 export function EngagementTrend({ seriesByGranularity }: EngagementTrendProps) {
-  const [g, setG] = useState<Granularity>("month");
+  const [g, setG] = useState<Granularity>("day");
   const c = useCssColors();
   const accent = c.accent || "#7b6cff";
   const info = c.info || "#55c2f5";

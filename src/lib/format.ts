@@ -39,6 +39,13 @@ export function formatDate(iso: string): string {
   });
 }
 
+export function formatHour12(hour: number): string {
+  const h = ((hour % 24) + 24) % 24;
+  const period = h < 12 ? "AM" : "PM";
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return `${hour12} ${period}`;
+}
+
 export function ageLabel(days: number): string {
   const years = Math.floor(days / 365);
   const months = Math.floor((days % 365) / 30);

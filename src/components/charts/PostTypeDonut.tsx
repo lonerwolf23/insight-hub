@@ -22,7 +22,7 @@ export function PostTypeDonut({ data }: PostTypeDonutProps) {
   const total = data.reduce((s, d) => s + d.count, 0);
 
   return (
-    <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+    <div className="flex flex-wrap items-center justify-center gap-4">
       <div className="relative h-52 w-52 shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -50,7 +50,7 @@ export function PostTypeDonut({ data }: PostTypeDonutProps) {
           <span className="label-mono text-faint">posts</span>
         </div>
       </div>
-      <div className="w-full space-y-2">
+      <div className="min-w-[9rem] flex-1 space-y-2">
         {data.map((d) => (
           <div key={d.type} className="flex items-center gap-2.5">
             <span
