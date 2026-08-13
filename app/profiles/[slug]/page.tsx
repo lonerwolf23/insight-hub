@@ -6,6 +6,8 @@ import {
   BadgeCheck,
   BarChart3,
   Building2,
+  CalendarDays,
+  Clock,
   ExternalLink,
   FileText,
   Heart,
@@ -26,6 +28,8 @@ import { CommentsPanel } from "@/components/CommentsPanel";
 import { PostsTable } from "@/components/PostsTable";
 import { ProfileImage } from "@/components/ProfileImage";
 import { StatTile } from "@/components/StatTile";
+import { BestReelHour } from "@/components/charts/BestReelHour";
+import { CompareBars } from "@/components/charts/CompareBars";
 import { EngagementTrend } from "@/components/charts/EngagementTrend";
 import { PostTypeDonut } from "@/components/charts/PostTypeDonut";
 import { PostsByMonth } from "@/components/charts/PostsByMonth";
@@ -83,6 +87,11 @@ export default function ProfileDetailPage() {
   const m = metrics;
   const posts = data.map[m.username].posts;
   const hue = m.username === "drmokshaadvocate" ? 250 : 200;
+  const weekdayData = m.weekday.map((d) => ({
+    label: d.label,
+    reels: Math.round(d.reelAvgEngagement),
+    posts: Math.round(d.postAvgEngagement),
+  }));
 
   return (
     <div className="space-y-8">
@@ -249,6 +258,55 @@ export default function ProfileDetailPage() {
           description={`${formatNumber(m.uniqueHashtags)} unique hashtags across analyzed posts`}
         >
           <TopHashtags data={m.topHashtags} />
+        </ChartCard>
+      </div>
+
+      {/* best time to post */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ChartCard
+          title="Best hour to post a Reel"
+          description="Avg likes + comments per Reel, by hour published"
+          headerSlot={
+            m.bestReelHour && (
+              <Badge variant="accent">
+                <Clock className="h-3 w-3" />
+                Peak {m.bestReelHour.label}
+              </Badge>
+            )
+          }
+        >
+          <BestReelHour data={m.reelHourly} />
+        </ChartCard>
+        <ChartCard
+          title="Best day to post"
+          description="Avg engagement by day of week — Reels vs. Posts"
+          headerSlot={
+            m.bestDay && (
+              <Badge variant="accent">
+                <CalendarDays className="h-3 w-3" />
+                Peak {m.bestDay.label}
+              </Badge>
+            )
+          }
+        >
+          <div className="mb-3 flex items-center gap-4">
+            <span className="flex items-center gap-1.5 text-xs text-muted">
+              <span className="h-2 w-2 rounded-full" style={{ background: "#7b6cff" }} />
+              Reels
+            </span>
+            <span className="flex items-center gap-1.5 text-xs text-muted">
+              <span className="h-2 w-2 rounded-full" style={{ background: "#55c2f5" }} />
+              Posts
+            </span>
+          </div>
+          <CompareBars
+            data={weekdayData}
+            series={[
+              { key: "reels", name: "Reels", color: "#7b6cff" },
+              { key: "posts", name: "Posts", color: "#55c2f5" },
+            ]}
+            height={220}
+          />
         </ChartCard>
       </div>
 

@@ -22,6 +22,22 @@ export interface HashtagSlice {
   count: number;
 }
 
+export interface HourSlice {
+  hour: number;
+  label: string;
+  posts: number;
+  avgEngagement: number;
+}
+
+export interface DaySlice {
+  day: number;
+  label: string;
+  reelPosts: number;
+  reelAvgEngagement: number;
+  postPosts: number;
+  postAvgEngagement: number;
+}
+
 export interface ProfileMetrics {
   username: string;
   fullName: string;
@@ -53,6 +69,10 @@ export interface ProfileMetrics {
   yearly: SeriesPoint[];
   firstPostDate: string | null;
   lastPostDate: string | null;
+  reelHourly: HourSlice[];
+  weekday: DaySlice[];
+  bestReelHour: HourSlice | null;
+  bestDay: DaySlice | null;
 }
 
 const POST_TYPE_LABELS: Record<string, string> = {
@@ -128,6 +148,86 @@ function buildSeries(posts: Post[], g: Granularity): SeriesPoint[] {
   return out;
 }
 
+/* ------------------------------ posting time ----------------------------- */
+
+const HOUR_LABELS = Array.from({ length: 24 }, (_, hour) => {
+  const period = hour < 12 ? "AM" : "PM";
+  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${hour12} ${period}`;
+});
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+// Instagram's dump has no explicit "reel" flag — a single-clip video post
+// (post_type GraphVideo) is the closest available proxy for a Reel.
+function isReel(post: Post): boolean {
+  return post.post_type === "GraphVideo";
+}
+
+function buildHourly(posts: Post[]): HourSlice[] {
+  const buckets = Array.from({ length: 24 }, (_, hour) => ({
+    hour,
+    posts: 0,
+    engagement: 0,
+  }));
+  for (const p of posts) {
+    const hour = new Date(p.timestamp).getHours();
+    buckets[hour].posts += 1;
+    buckets[hour].engagement += p.likes + p.comments_count;
+  }
+  return buckets.map((b) => ({
+    hour: b.hour,
+    label: HOUR_LABELS[b.hour],
+    posts: b.posts,
+    avgEngagement: b.posts ? b.engagement / b.posts : 0,
+  }));
+}
+
+function buildWeekday(posts: Post[]): DaySlice[] {
+  const buckets = Array.from({ length: 7 }, (_, day) => ({
+    day,
+    reelPosts: 0,
+    reelEngagement: 0,
+    postPosts: 0,
+    postEngagement: 0,
+  }));
+  for (const p of posts) {
+    const day = new Date(p.timestamp).getDay();
+    const engagement = p.likes + p.comments_count;
+    const bucket = buckets[day];
+    if (isReel(p)) {
+      bucket.reelPosts += 1;
+      bucket.reelEngagement += engagement;
+    } else {
+      bucket.postPosts += 1;
+      bucket.postEngagement += engagement;
+    }
+  }
+  return buckets.map((b) => ({
+    day: b.day,
+    label: DAY_LABELS[b.day],
+    reelPosts: b.reelPosts,
+    reelAvgEngagement: b.reelPosts ? b.reelEngagement / b.reelPosts : 0,
+    postPosts: b.postPosts,
+    postAvgEngagement: b.postPosts ? b.postEngagement / b.postPosts : 0,
+  }));
+}
+
+function pickBestHour(hours: HourSlice[]): HourSlice | null {
+  const withPosts = hours.filter((h) => h.posts > 0);
+  if (withPosts.length === 0) return null;
+  return withPosts.reduce((a, b) => (b.avgEngagement > a.avgEngagement ? b : a));
+}
+
+function pickBestDay(days: DaySlice[]): DaySlice | null {
+  const withPosts = days.filter((d) => d.reelPosts + d.postPosts > 0);
+  if (withPosts.length === 0) return null;
+  const avgOf = (d: DaySlice) =>
+    (d.reelAvgEngagement * d.reelPosts + d.postAvgEngagement * d.postPosts) /
+    (d.reelPosts + d.postPosts);
+  return withPosts.reduce((a, b) => (avgOf(b) > avgOf(a) ? b : a));
+}
+
 /* ------------------------------ main entry ------------------------------ */
 
 export function computeMetrics(profile: Profile): ProfileMetrics {
@@ -165,6 +265,9 @@ export function computeMetrics(profile: Profile): ProfileMetrics {
     .slice(0, 12)
     .map(([tag, count]) => ({ tag, count }));
 
+  const reelHourly = buildHourly(posts.filter(isReel));
+  const weekday = buildWeekday(posts);
+
   return {
     username: profile.username,
     fullName: profile.full_name,
@@ -199,5 +302,9 @@ export function computeMetrics(profile: Profile): ProfileMetrics {
     yearly: buildSeries(posts, "year"),
     firstPostDate: analyzedPosts ? posts[analyzedPosts - 1].timestamp : null,
     lastPostDate: analyzedPosts ? posts[0].timestamp : null,
+    reelHourly,
+    weekday,
+    bestReelHour: pickBestHour(reelHourly),
+    bestDay: pickBestDay(weekday),
   };
 }
