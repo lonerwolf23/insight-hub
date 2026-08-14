@@ -337,16 +337,10 @@ export default function ProfileDetailPage() {
           results vary by audience, niche and time zone.
         </p>
         <div className="grid gap-4 lg:grid-cols-2">
-          <ChartCard
-            title="Reels — peak hours by day, worldwide"
-            description="SocialPilot: ~250K Reels across 30K+ connected accounts"
-          >
+          <ChartCard title="Reels — peak hours by day, worldwide">
             <GlobalReelTimes />
           </ChartCard>
-          <ChartCard
-            title="Posts — peak windows by day, worldwide"
-            description="Sprout Social: ~2B engagements across 307K profiles"
-          >
+          <ChartCard title="Posts — peak windows by day, worldwide">
             <GlobalPostWindowChart />
           </ChartCard>
         </div>
