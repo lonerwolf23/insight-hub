@@ -28,10 +28,29 @@ export function ProfileCard({ metrics: m, hue = 250 }: ProfileCardProps) {
   return (
     <Link
       href={`/profiles/${profileSlug(m.username)}`}
-      className="glass group block p-5 transition-all duration-300 hover:border-line-strong"
+      className="glass group relative block overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:border-line-strong"
+      style={{
+        boxShadow: `0 0 0 1px var(--line)`,
+      }}
     >
-      <div className="flex items-start gap-4">
-        <ProfileImage src={m.profilePicUrl} name={m.fullName} size={64} hue={hue} />
+      {/* hue-tinted glow that blooms on hover */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-40"
+        style={{ background: `hsl(${hue} 80% 55%)` }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-0.5 opacity-70"
+        style={{
+          background: `linear-gradient(90deg, transparent, hsl(${hue} 80% 62%), transparent)`,
+        }}
+      />
+
+      <div className="relative flex items-start gap-4">
+        <div className="transition-transform duration-300 group-hover:scale-105">
+          <ProfileImage src={m.profilePicUrl} name={m.fullName} size={64} hue={hue} />
+        </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-display text-base font-semibold tracking-tight group-hover:text-accent-strong">
@@ -59,7 +78,7 @@ export function ProfileCard({ metrics: m, hue = 250 }: ProfileCardProps) {
         </div>
         <ArrowUpRight className="h-4 w-4 shrink-0 text-faint transition-all group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-accent" />
       </div>
-      <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3">
+      <div className="relative mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line pt-3">
         <span className="flex items-center gap-1.5 text-xs text-muted">
           <Heart className="h-3.5 w-3.5 text-danger" />
           <span className="font-mono text-foreground">{formatCompact(m.totalLikes)}</span>
@@ -72,7 +91,7 @@ export function ProfileCard({ metrics: m, hue = 250 }: ProfileCardProps) {
         </span>
         <span className="ml-auto flex items-center gap-1.5 text-xs text-muted">
           <TrendingUp className="h-3.5 w-3.5 text-good" />
-          <span className="font-mono text-foreground">{formatPercent(m.engagementRate, 2)}%</span>
+          <span className="font-mono text-foreground">{formatPercent(m.engagementRate, 2)}</span>
           engagement
         </span>
       </div>

@@ -7,6 +7,7 @@ export interface PostTypeSlice {
   label: string;
   count: number;
   share: number;
+  avgEngagement: number;
 }
 
 export interface SeriesPoint {
@@ -20,6 +21,35 @@ export interface SeriesPoint {
 export interface HashtagSlice {
   tag: string;
   count: number;
+  avgEngagement?: number;
+}
+
+export interface HeatmapCell {
+  day: number;
+  hour: number;
+  dayLabel: string;
+  hourLabel: string;
+  posts: number;
+  avgEngagement: number;
+}
+
+export interface CaptionBucket {
+  label: string;
+  avgEngagement: number;
+  count: number;
+}
+
+export interface CaptionMetrics {
+  length: CaptionBucket[];
+  question: CaptionBucket[];
+  cta: CaptionBucket[];
+  emoji: CaptionBucket[];
+}
+
+export interface CommenterSlice {
+  commenter: string;
+  count: number;
+  totalLikesGiven: number;
 }
 
 export interface HourSlice {
@@ -78,6 +108,12 @@ export interface ProfileMetrics {
   bestDay: DaySlice | null;
   bestReelDay: DaySlice | null;
   bestPostDay: DaySlice | null;
+  heatmap: HeatmapCell[];
+  peakHeatmapCell: HeatmapCell | null;
+  hashtagEffectiveness: HashtagSlice[];
+  captionMetrics: CaptionMetrics;
+  commentToLikeRatio: number;
+  topCommenters: CommenterSlice[];
 }
 
 const POST_TYPE_LABELS: Record<string, string> = {
@@ -255,6 +291,167 @@ function pickBestDayBy(days: DaySlice[], kind: "reel" | "post"): DaySlice | null
   return withPosts.reduce((a, b) => (avgOf(b) > avgOf(a) ? b : a));
 }
 
+function engagementOf(p: Post): number {
+  return p.likes + p.comments_count;
+}
+
+/* -------------------------- day x hour heatmap --------------------------- */
+
+function buildHeatmap(posts: Post[]): HeatmapCell[] {
+  const buckets = Array.from({ length: 7 }, () =>
+    Array.from({ length: 24 }, () => ({ posts: 0, engagement: 0 })),
+  );
+  for (const p of posts) {
+    const d = new Date(p.timestamp);
+    const bucket = buckets[d.getDay()][d.getHours()];
+    bucket.posts += 1;
+    bucket.engagement += engagementOf(p);
+  }
+  const cells: HeatmapCell[] = [];
+  for (let day = 0; day < 7; day++) {
+    for (let hour = 0; hour < 24; hour++) {
+      const b = buckets[day][hour];
+      cells.push({
+        day,
+        hour,
+        dayLabel: DAY_LABELS[day],
+        hourLabel: HOUR_LABELS[hour],
+        posts: b.posts,
+        avgEngagement: b.posts ? b.engagement / b.posts : 0,
+      });
+    }
+  }
+  return cells;
+}
+
+function pickPeakCell(cells: HeatmapCell[]): HeatmapCell | null {
+  const withPosts = cells.filter((c) => c.posts > 0);
+  if (withPosts.length === 0) return null;
+  return withPosts.reduce((a, b) => (b.avgEngagement > a.avgEngagement ? b : a));
+}
+
+/* --------------------------- hashtag effectiveness ------------------------ */
+
+// Tags used fewer than this many times are excluded — a single lucky post
+// would otherwise dominate the "best performing" ranking.
+const MIN_HASHTAG_USES = 3;
+
+function buildHashtagEffectiveness(posts: Post[]): HashtagSlice[] {
+  const agg = new Map<string, { count: number; engagement: number }>();
+  for (const p of posts) {
+    const engagement = engagementOf(p);
+    for (const tag of p.hashtags) {
+      const cur = agg.get(tag) ?? { count: 0, engagement: 0 };
+      cur.count += 1;
+      cur.engagement += engagement;
+      agg.set(tag, cur);
+    }
+  }
+  return [...agg.entries()]
+    .filter(([, v]) => v.count >= MIN_HASHTAG_USES)
+    .map(([tag, v]) => ({ tag, count: v.count, avgEngagement: v.engagement / v.count }))
+    .sort((a, b) => (b.avgEngagement ?? 0) - (a.avgEngagement ?? 0))
+    .slice(0, 12);
+}
+
+/* ----------------------------- caption patterns --------------------------- */
+
+// Common Instagram engagement-bait phrasing — a rough heuristic, not NLP.
+const CTA_KEYWORDS = [
+  "comment below",
+  "comment \"",
+  "tag a friend",
+  "tag someone",
+  "tag your",
+  "link in bio",
+  "dm us",
+  "dm me",
+  "double tap",
+  "save this",
+  "share this",
+  "swipe up",
+  "click the link",
+];
+
+const EMOJI_RE = /\p{Extended_Pictographic}/gu;
+
+function captionLengthBucket(p: Post): string {
+  const len = p.caption?.trim().length ?? 0;
+  if (len === 0) return "No caption";
+  if (len < 50) return "Short (<50)";
+  if (len < 150) return "Medium (50–150)";
+  return "Long (150+)";
+}
+
+function questionBucket(p: Post): string {
+  return p.caption?.includes("?") ? "Has question" : "No question";
+}
+
+function ctaBucket(p: Post): string {
+  const text = p.caption?.toLowerCase() ?? "";
+  return CTA_KEYWORDS.some((kw) => text.includes(kw)) ? "Has CTA" : "No CTA";
+}
+
+function emojiCountBucket(p: Post): string {
+  const count = p.caption?.match(EMOJI_RE)?.length ?? 0;
+  if (count === 0) return "No emoji";
+  if (count <= 3) return "Some (1–3)";
+  return "Many (4+)";
+}
+
+function bucketize(
+  posts: Post[],
+  classify: (p: Post) => string,
+  order: string[],
+): CaptionBucket[] {
+  const agg = new Map<string, { count: number; engagement: number }>();
+  for (const p of posts) {
+    const key = classify(p);
+    const cur = agg.get(key) ?? { count: 0, engagement: 0 };
+    cur.count += 1;
+    cur.engagement += engagementOf(p);
+    agg.set(key, cur);
+  }
+  return order
+    .filter((label) => agg.has(label))
+    .map((label) => {
+      const v = agg.get(label)!;
+      return { label, count: v.count, avgEngagement: v.count ? v.engagement / v.count : 0 };
+    });
+}
+
+function buildCaptionMetrics(posts: Post[]): CaptionMetrics {
+  return {
+    length: bucketize(posts, captionLengthBucket, [
+      "No caption",
+      "Short (<50)",
+      "Medium (50–150)",
+      "Long (150+)",
+    ]),
+    question: bucketize(posts, questionBucket, ["Has question", "No question"]),
+    cta: bucketize(posts, ctaBucket, ["Has CTA", "No CTA"]),
+    emoji: bucketize(posts, emojiCountBucket, ["No emoji", "Some (1–3)", "Many (4+)"]),
+  };
+}
+
+/* ---------------------------- comment quality ----------------------------- */
+
+function buildTopCommenters(posts: Post[]): CommenterSlice[] {
+  const agg = new Map<string, { count: number; likes: number }>();
+  for (const p of posts) {
+    for (const c of p.comments) {
+      const cur = agg.get(c.commenter) ?? { count: 0, likes: 0 };
+      cur.count += 1;
+      cur.likes += c.likes;
+      agg.set(c.commenter, cur);
+    }
+  }
+  return [...agg.entries()]
+    .map(([commenter, v]) => ({ commenter, count: v.count, totalLikesGiven: v.likes }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+}
+
 /* ------------------------------ main entry ------------------------------ */
 
 export function computeMetrics(profile: Profile): ProfileMetrics {
@@ -274,14 +471,20 @@ export function computeMetrics(profile: Profile): ProfileMetrics {
       : 0;
   const likesPerFollower = profile.followers > 0 ? totalLikes / profile.followers : 0;
 
-  const typeCounts = new Map<string, number>();
-  for (const p of posts) typeCounts.set(p.post_type, (typeCounts.get(p.post_type) ?? 0) + 1);
+  const typeCounts = new Map<string, { count: number; engagement: number }>();
+  for (const p of posts) {
+    const cur = typeCounts.get(p.post_type) ?? { count: 0, engagement: 0 };
+    cur.count += 1;
+    cur.engagement += engagementOf(p);
+    typeCounts.set(p.post_type, cur);
+  }
   const postTypes: PostTypeSlice[] = [...typeCounts.entries()]
-    .map(([type, count]) => ({
+    .map(([type, v]) => ({
       type,
       label: POST_TYPE_LABELS[type] ?? type,
-      count,
-      share: analyzedPosts ? (count / analyzedPosts) * 100 : 0,
+      count: v.count,
+      share: analyzedPosts ? (v.count / analyzedPosts) * 100 : 0,
+      avgEngagement: v.count ? v.engagement / v.count : 0,
     }))
     .sort((a, b) => b.count - a.count);
 
@@ -295,6 +498,7 @@ export function computeMetrics(profile: Profile): ProfileMetrics {
   const reelHourly = buildHourly(posts.filter(isReel));
   const postHourly = buildHourly(posts.filter((p) => !isReel(p)));
   const weekday = buildWeekday(posts);
+  const heatmap = buildHeatmap(posts);
 
   return {
     username: profile.username,
@@ -339,5 +543,11 @@ export function computeMetrics(profile: Profile): ProfileMetrics {
     bestDay: pickBestDay(weekday),
     bestReelDay: pickBestDayBy(weekday, "reel"),
     bestPostDay: pickBestDayBy(weekday, "post"),
+    heatmap,
+    peakHeatmapCell: pickPeakCell(heatmap),
+    hashtagEffectiveness: buildHashtagEffectiveness(posts),
+    captionMetrics: buildCaptionMetrics(posts),
+    commentToLikeRatio: totalLikes > 0 ? (totalComments / totalLikes) * 100 : 0,
+    topCommenters: buildTopCommenters(posts),
   };
 }

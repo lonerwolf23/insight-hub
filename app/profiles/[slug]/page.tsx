@@ -10,13 +10,16 @@ import {
   Clock,
   ExternalLink,
   FileText,
+  Flame,
   Globe,
   Heart,
-  Loader2,
   Lock,
   MessageCircle,
   MessagesSquare,
+  Percent,
   TrendingUp,
+  Trophy,
+  Type,
   UserPlus,
   Users,
   Zap,
@@ -30,16 +33,22 @@ import { PostingRecommendation } from "@/components/PostingRecommendation";
 import { PostsTable } from "@/components/PostsTable";
 import { ProfileImage } from "@/components/ProfileImage";
 import { StatTile } from "@/components/StatTile";
+import { ErrorState, StatTilesSkeleton } from "@/components/StateScreens";
+import { TopCommenters } from "@/components/TopCommenters";
 import { BestReelHour } from "@/components/charts/BestReelHour";
+import { CaptionInsights } from "@/components/charts/CaptionInsights";
 import { CompareBars } from "@/components/charts/CompareBars";
 import { EngagementTrend } from "@/components/charts/EngagementTrend";
 import { GlobalPostWindowChart } from "@/components/charts/GlobalPostWindow";
 import { GlobalReelTimes } from "@/components/charts/GlobalReelTimes";
 import { PostTypeDonut } from "@/components/charts/PostTypeDonut";
+import { PostTypeEngagementBar } from "@/components/charts/PostTypeEngagementBar";
 import { PostsByMonth } from "@/components/charts/PostsByMonth";
+import { PostingTimeTable } from "@/components/charts/PostingTimeTable";
 import { TopHashtags } from "@/components/charts/TopHashtags";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCompact, formatDate, formatNumber } from "@/lib/format";
 import { profileFromSlug } from "@/lib/slugs";
 import { useProfiles } from "@/lib/use-profiles";
@@ -50,20 +59,21 @@ export default function ProfileDetailPage() {
   const { data, error } = useProfiles();
 
   if (error) {
-    return (
-      <div className="glass flex flex-col items-center gap-3 p-16 text-center">
-        <BarChart3 className="h-8 w-8 text-danger" />
-        <h2 className="font-display text-lg font-semibold">Failed to load profile data</h2>
-        <p className="text-sm text-muted">{error}</p>
-      </div>
-    );
+    return <ErrorState title="Failed to load profile data" message={error} />;
   }
 
   if (!data) {
     return (
-      <div className="glass flex flex-col items-center gap-3 p-16 text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        <p className="text-sm text-muted">Loading Instagram profile dump…</p>
+      <div className="animate-in fade-in space-y-8 duration-500">
+        <div className="glass flex flex-col gap-5 p-6 sm:flex-row sm:items-start">
+          <Skeleton className="h-24 w-24 shrink-0 rounded-2xl" />
+          <div className="flex-1 space-y-3">
+            <Skeleton className="h-6 w-56" />
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-full max-w-md" />
+          </div>
+        </div>
+        <StatTilesSkeleton />
       </div>
     );
   }
@@ -73,7 +83,9 @@ export default function ProfileDetailPage() {
   if (!metrics) {
     return (
       <div className="glass flex flex-col items-center gap-3 p-16 text-center">
-        <BarChart3 className="h-8 w-8 text-danger" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-danger/10 text-danger">
+          <BarChart3 className="h-6 w-6" />
+        </div>
         <h2 className="font-display text-lg font-semibold">Profile not found</h2>
         <p className="text-sm text-muted">
           <span className="font-mono">@{username}</span> is not in the profile dump.
@@ -108,8 +120,13 @@ export default function ProfileDetailPage() {
       </Button>
 
       {/* identity header */}
-      <div className="glass p-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+      <div className="glass animate-in fade-in slide-in-from-bottom-3 relative overflow-hidden p-6 duration-500 fill-mode-both">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full opacity-25 blur-3xl"
+          style={{ background: `hsl(${hue} 80% 55%)` }}
+        />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start">
           <ProfileImage src={m.profilePicUrl} name={m.fullName} size={96} hue={hue} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
@@ -176,7 +193,10 @@ export default function ProfileDetailPage() {
       </div>
 
       {/* key stat tiles */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+      <div
+        className="animate-in fade-in slide-in-from-bottom-3 grid grid-cols-2 gap-3 duration-500 fill-mode-both md:grid-cols-3 xl:grid-cols-7"
+        style={{ animationDelay: "100ms" }}
+      >
         <StatTile
           label="Total likes"
           icon={Heart}
@@ -234,6 +254,12 @@ export default function ProfileDetailPage() {
             )
           }
         />
+        <StatTile
+          label="Comment / like ratio"
+          icon={Percent}
+          value={<span className="text-xl">{m.commentToLikeRatio.toFixed(1)}%</span>}
+          sub="genuine engagement signal"
+        />
       </div>
 
       {/* trend + post types */}
@@ -257,18 +283,40 @@ export default function ProfileDetailPage() {
         </ChartCard>
       </div>
 
-      {/* posting frequency + hashtags */}
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* posting frequency + content type performance + hashtags */}
+      <div className="grid gap-4 lg:grid-cols-3">
         <ChartCard title="Posting frequency" description="Posts published per month">
           <PostsByMonth data={m.monthly} />
         </ChartCard>
         <ChartCard
-          title="Top hashtags"
+          title="Content type engagement"
+          description="Avg likes + comments per post, by format"
+        >
+          <PostTypeEngagementBar data={m.postTypes} />
+        </ChartCard>
+        <ChartCard
+          title="Hashtags"
           description={`${formatNumber(m.uniqueHashtags)} unique hashtags across analyzed posts`}
         >
-          <TopHashtags data={m.topHashtags} />
+          <TopHashtags data={m.topHashtags} effectivenessData={m.hashtagEffectiveness} />
         </ChartCard>
       </div>
+
+      {/* day x hour table */}
+      <ChartCard
+        title="Best day & hour to post"
+        description="Every day/hour slot with posts, ranked by avg engagement — click a column to re-sort"
+        headerSlot={
+          m.peakHeatmapCell && (
+            <Badge variant="accent">
+              <Flame className="h-3 w-3" />
+              Peak {m.peakHeatmapCell.dayLabel} {m.peakHeatmapCell.hourLabel}
+            </Badge>
+          )
+        }
+      >
+        <PostingTimeTable data={m.heatmap} />
+      </ChartCard>
 
       {/* recommended posting time */}
       <PostingRecommendation />
@@ -349,6 +397,20 @@ export default function ProfileDetailPage() {
         </p>
       </div>
 
+      {/* caption patterns */}
+      <div className="glass p-5">
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <Type className="h-4 w-4 text-accent" />
+          <h3 className="font-display text-sm font-semibold tracking-tight">Caption patterns</h3>
+          <span className="label-mono ml-auto text-faint">avg engagement by caption trait</span>
+        </div>
+        <p className="mb-4 max-w-3xl text-xs leading-relaxed text-muted">
+          How caption length, questions, calls-to-action and emoji use line up with engagement for
+          this account&apos;s own posts.
+        </p>
+        <CaptionInsights data={m.captionMetrics} />
+      </div>
+
       {/* posts table */}
       <div className="glass p-5">
         <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -363,16 +425,25 @@ export default function ProfileDetailPage() {
         <PostsTable posts={posts} />
       </div>
 
-      {/* comments */}
-      <div className="glass p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <MessageCircle className="h-4 w-4 text-accent" />
-          <h3 className="font-display text-sm font-semibold tracking-tight">Comments</h3>
-          <span className="label-mono ml-auto text-faint">
-            {formatNumber(m.postsWithComments)} posts with captured comments
-          </span>
+      {/* comments + top commenters */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="glass p-5 lg:col-span-2">
+          <div className="mb-4 flex items-center gap-2">
+            <MessageCircle className="h-4 w-4 text-accent" />
+            <h3 className="font-display text-sm font-semibold tracking-tight">Comments</h3>
+            <span className="label-mono ml-auto text-faint">
+              {formatNumber(m.postsWithComments)} posts with captured comments
+            </span>
+          </div>
+          <CommentsPanel posts={posts} />
         </div>
-        <CommentsPanel posts={posts} />
+        <div className="glass p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-accent" />
+            <h3 className="font-display text-sm font-semibold tracking-tight">Top commenters</h3>
+          </div>
+          <TopCommenters data={m.topCommenters} />
+        </div>
       </div>
     </div>
   );

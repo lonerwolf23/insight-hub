@@ -1,36 +1,41 @@
 "use client";
 
-import { BarChart3, Loader2, Users } from "lucide-react";
+import { Users } from "lucide-react";
 
+import { AnimatedNumber } from "@/components/CountUp";
 import { ProfileCard } from "@/components/ProfileCard";
+import { ErrorState, ProfileCardsSkeleton } from "@/components/StateScreens";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatNumber } from "@/lib/format";
 import { useProfiles } from "@/lib/use-profiles";
 
 export default function ProfilesPage() {
   const { data, error } = useProfiles();
 
   if (error) {
-    return (
-      <div className="glass flex flex-col items-center gap-3 p-16 text-center">
-        <BarChart3 className="h-8 w-8 text-danger" />
-        <h2 className="font-display text-lg font-semibold">Failed to load profile data</h2>
-        <p className="text-sm text-muted">{error}</p>
-      </div>
-    );
+    return <ErrorState title="Failed to load profile data" message={error} />;
   }
 
   if (!data) {
     return (
-      <div className="glass flex flex-col items-center gap-3 p-16 text-center">
-        <Loader2 className="h-8 w-8 animate-spin text-accent" />
-        <p className="text-sm text-muted">Loading Instagram profile dump…</p>
+      <div className="animate-in fade-in space-y-8 duration-500">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="space-y-3">
+            <Skeleton className="h-3 w-40" />
+            <Skeleton className="h-9 w-56" />
+            <Skeleton className="h-4 w-80 max-w-full" />
+          </div>
+          <Skeleton className="h-10 w-52 rounded-2xl" />
+        </div>
+        <ProfileCardsSkeleton />
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="animate-in fade-in slide-in-from-bottom-3 flex flex-wrap items-end justify-between gap-4 duration-500 fill-mode-both">
         <div>
           <div className="flex items-center gap-3">
             <p className="label-mono text-faint">Profiles in the dump</p>
@@ -47,7 +52,10 @@ export default function ProfilesPage() {
           <Users className="h-4 w-4 text-accent" />
           <span>
             <span className="font-mono text-foreground">
-              {data.metrics.reduce((s, m) => s + m.followers, 0)}
+              <AnimatedNumber
+                value={data.metrics.reduce((s, m) => s + m.followers, 0)}
+                format={formatNumber}
+              />
             </span>{" "}
             combined followers
           </span>
@@ -56,7 +64,13 @@ export default function ProfilesPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
         {data.metrics.map((m, i) => (
-          <ProfileCard key={m.username} metrics={m} hue={i === 0 ? 250 : 200} />
+          <div
+            key={m.username}
+            className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both"
+            style={{ animationDelay: `${80 + i * 80}ms` }}
+          >
+            <ProfileCard metrics={m} hue={i === 0 ? 250 : 200} />
+          </div>
         ))}
       </div>
     </div>
