@@ -7,6 +7,7 @@ import {
   BarChart3,
   Building2,
   CalendarDays,
+  Clapperboard,
   Clock,
   ExternalLink,
   FileText,
@@ -32,6 +33,7 @@ import { CommentsPanel } from "@/components/CommentsPanel";
 import { PostingRecommendation } from "@/components/PostingRecommendation";
 import { PostsTable } from "@/components/PostsTable";
 import { ProfileImage } from "@/components/ProfileImage";
+import { ReelTimeline } from "@/components/ReelTimeline";
 import { StatTile } from "@/components/StatTile";
 import { ErrorState, StatTilesSkeleton } from "@/components/StateScreens";
 import { TopCommenters } from "@/components/TopCommenters";
@@ -46,6 +48,8 @@ import { PostTypeEngagementBar } from "@/components/charts/PostTypeEngagementBar
 import { PostsByMonth } from "@/components/charts/PostsByMonth";
 import { PostingTimeTable } from "@/components/charts/PostingTimeTable";
 import { TopHashtags } from "@/components/charts/TopHashtags";
+import { WeeklyTimeReport } from "@/components/charts/WeeklyTimeReport";
+import { isReel } from "@/lib/metrics";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -318,6 +322,14 @@ export default function ProfileDetailPage() {
         <PostingTimeTable data={m.heatmap} />
       </ChartCard>
 
+      {/* weekly posting-time report, Monday through Sunday */}
+      <ChartCard
+        title="Weekly posting schedule"
+        description="Actual posting activity by hour, Monday through Sunday — hover a bar for the exact count"
+      >
+        <WeeklyTimeReport heatmap={m.heatmap} />
+      </ChartCard>
+
       {/* recommended posting time */}
       <PostingRecommendation />
 
@@ -409,6 +421,18 @@ export default function ProfileDetailPage() {
           this account&apos;s own posts.
         </p>
         <CaptionInsights data={m.captionMetrics} />
+      </div>
+
+      {/* reel-by-reel browser */}
+      <div className="glass p-5">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <Clapperboard className="h-4 w-4 text-accent" />
+          <h3 className="font-display text-sm font-semibold tracking-tight">Browse reels</h3>
+          <span className="label-mono ml-auto text-faint">
+            {formatNumber(posts.filter(isReel).length)} reels · swipe or use the arrows
+          </span>
+        </div>
+        <ReelTimeline posts={posts} />
       </div>
 
       {/* posts table */}

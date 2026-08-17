@@ -215,7 +215,7 @@ const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // Instagram's dump has no explicit "reel" flag — a single-clip video post
 // (post_type GraphVideo) is the closest available proxy for a Reel.
-function isReel(post: Post): boolean {
+export function isReel(post: Post): boolean {
   return post.post_type === "GraphVideo";
 }
 

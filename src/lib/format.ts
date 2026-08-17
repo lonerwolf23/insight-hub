@@ -39,6 +39,18 @@ export function formatDate(iso: string): string {
   });
 }
 
+export function formatTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+export function formatWeekday(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { weekday: "short" });
+}
+
 export function formatHour12(hour: number): string {
   const h = ((hour % 24) + 24) % 24;
   const period = h < 12 ? "AM" : "PM";

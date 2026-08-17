@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, LayoutDashboard, Radar, Users } from "lucide-react";
+import { LayoutDashboard, Radar, Scale, Users } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/compare", label: "Compare", icon: Scale, end: false },
   { to: "/profiles", label: "Profiles", icon: Users, end: false },
 ];
 
