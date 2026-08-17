@@ -30,8 +30,8 @@ interface EngagementTrendProps {
 export function EngagementTrend({ seriesByGranularity }: EngagementTrendProps) {
   const [g, setG] = useState<Granularity>("day");
   const c = useCssColors();
-  const accent = c.accent || "#7b6cff";
-  const info = c.info || "#55c2f5";
+  const accent = c.accent || "#0d99ff";
+  const info = c.info || "#9747ff";
   const grid = c.line || "rgba(255,255,255,0.08)";
   const tick = {
     fill: c.muted || "#8d8da4",

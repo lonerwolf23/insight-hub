@@ -21,7 +21,7 @@ interface BestReelHourProps {
 
 export function BestReelHour({ data }: BestReelHourProps) {
   const c = useCssColors();
-  const accent = c.accent || "#7b6cff";
+  const accent = c.accent || "#0d99ff";
   const accentStrong = c.accentStrong || "#9c8fff";
   const grid = c.line || "rgba(255,255,255,0.08)";
   const tick = {

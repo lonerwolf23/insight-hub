@@ -24,47 +24,52 @@
   --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", "Cascadia Mono", monospace;
 
-  --shadow-glow: 0 0 40px -8px var(--accent-soft);
-  --shadow-panel: 0 24px 48px -32px rgba(0, 0, 0, 0.6);
+  --shadow-panel: 0 1px 2px rgba(16, 16, 24, 0.04), 0 8px 20px -12px rgba(16, 16, 24, 0.12);
+
+  /* Tighter, tool-like corner radii — a flat editor UI, not a marketing page. */
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.875rem;
+  --radius-4xl: 1rem;
 }
 
-/* ---- Dark mode is the default. `.light` on <html> swaps tokens. ---- */
+/* ---- Light is the default surface — a precise, editor-style UI. `.dark` on <html> swaps tokens. ---- */
 :root {
-  --bg: #08080e;
-  --surface: #0d0d15;
-  --raised: #131320;
-  --fg: #eaeaf4;
-  --muted: #8d8da4;
-  --faint: #54546b;
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.16);
-  --accent: #7b6cff;
-  --accent-strong: #a294ff;
-  --accent-soft: rgba(123, 108, 255, 0.16);
-  --good: #37d79a;
-  --warn: #f2b25c;
-  --danger: #ff6b81;
-  --info: #55c2f5;
-  color-scheme: dark;
+  --bg: #f0f0f2;
+  --surface: #ffffff;
+  --raised: #f5f5f7;
+  --fg: #1a1a1f;
+  --muted: #6b6b76;
+  --faint: #9797a1;
+  --line: rgba(20, 20, 30, 0.1);
+  --line-strong: rgba(20, 20, 30, 0.18);
+  --accent: #0d99ff;
+  --accent-strong: #0a7ee0;
+  --accent-soft: rgba(13, 153, 255, 0.1);
+  --good: #14ae5c;
+  --warn: #d6960f;
+  --danger: #f24822;
+  --info: #9747ff;
+  color-scheme: light;
 }
 
-.light {
-  --bg: #f4f4f8;
-  --surface: #ffffff;
-  --raised: #ffffff;
-  --fg: #171723;
-  --muted: #5b5b72;
-  --faint: #9c9cb0;
-  --line: rgba(16, 16, 36, 0.09);
-  --line-strong: rgba(16, 16, 36, 0.18);
-  --accent: #5f51e8;
-  --accent-strong: #4638cc;
-  --accent-soft: rgba(95, 81, 232, 0.12);
-  --good: #0d9d6b;
-  --warn: #cf8417;
-  --danger: #dd3b58;
-  --info: #0b7fc2;
-  color-scheme: light;
+.dark {
+  --bg: #171719;
+  --surface: #1e1e21;
+  --raised: #28282c;
+  --fg: #f2f2f5;
+  --muted: #a3a3ab;
+  --faint: #717178;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --accent: #0d99ff;
+  --accent-strong: #4db2ff;
+  --accent-soft: rgba(13, 153, 255, 0.18);
+  --good: #37c977;
+  --warn: #eab234;
+  --danger: #ff6248;
+  --info: #b27cff;
+  color-scheme: dark;
 }
 
 @layer base {
@@ -95,107 +100,58 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: color-mix(in oklab, var(--fg) 22%, transparent);
+    background: color-mix(in oklab, var(--fg) 16%, transparent);
     border-radius: 8px;
     border: 3px solid transparent;
     background-clip: content-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in oklab, var(--fg) 34%, transparent);
+    background: color-mix(in oklab, var(--fg) 26%, transparent);
     border: 3px solid transparent;
     background-clip: content-box;
   }
 }
 
 @layer components {
-  /* Frosted glass panel — primary surface for the app. */
+  /* Primary panel surface — flat, opaque, thin border. No blur, no glow. */
   .glass {
     position: relative;
-    background: linear-gradient(
-      180deg,
-      color-mix(in oklab, var(--surface) 88%, transparent),
-      color-mix(in oklab, var(--bg) 92%, transparent)
-    );
+    background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: 1.5rem;
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.05),
-      var(--shadow-panel);
+    border-radius: 0.625rem;
+    box-shadow: var(--shadow-panel);
   }
 
-  .light .glass {
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.94),
-      rgba(255, 255, 255, 0.82)
-    );
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.95),
-      0 24px 48px -32px rgba(24, 24, 60, 0.22);
-  }
-
-  /* Softer glass — nested tiles inside panels. */
+  /* Nested tile inside a panel — one step toward the canvas color. */
   .glass-soft {
     position: relative;
-    background: color-mix(in oklab, var(--raised) 45%, transparent);
+    background: var(--raised);
     border: 1px solid var(--line);
-    border-radius: 1.25rem;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    border-radius: 0.5rem;
   }
 
-  .light .glass-soft {
-    background: rgba(255, 255, 255, 0.72);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      0 12px 24px -20px rgba(24, 24, 60, 0.16);
-  }
-
-  /* Ambient background glow blobs. */
+  /* Ambient background glows are off-brief for this theme — kept inert so any
+     leftover markup renders nothing rather than a stray glow. */
   .bg-glow {
-    position: fixed;
-    pointer-events: none;
-    z-index: 0;
-    border-radius: 9999px;
-    filter: blur(90px);
-    opacity: 0.5;
-  }
-
-  .bg-glow-accent {
-    background: radial-gradient(
-      circle,
-      color-mix(in oklab, var(--accent) 32%, transparent),
-      transparent 70%
-    );
-  }
-
-  .bg-glow-cool {
-    background: radial-gradient(
-      circle,
-      color-mix(in oklab, var(--info) 22%, transparent),
-      transparent 70%
-    );
-  }
-
-  .light .bg-glow {
-    opacity: 0.28;
+    display: none;
   }
 }
 
 @utility label-mono {
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 @utility panel-glow {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 0 0 1px var(--line),
-    0 24px 48px -32px rgba(0, 0, 0, 0.6);
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 0 0 1px var(--line);
+}
+
+.dark .panel-glow {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px var(--line);
 }

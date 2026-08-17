@@ -5,11 +5,11 @@
 // avoids a <script> tag (React 19 rejects inline scripts in component trees).
 if (typeof document !== "undefined") {
   try {
-    if (localStorage.getItem("insight-hub-theme") === "light") {
-      document.documentElement.classList.add("light");
+    if (localStorage.getItem("insight-hub-theme") === "dark") {
+      document.documentElement.classList.add("dark");
     }
   } catch {
-    // storage may be unavailable (private mode) — dark theme remains the default
+    // storage may be unavailable (private mode) — light theme remains the default
   }
 }
 

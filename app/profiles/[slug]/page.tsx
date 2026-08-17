@@ -123,8 +123,8 @@ export default function ProfileDetailPage() {
       <div className="glass animate-in fade-in slide-in-from-bottom-3 relative overflow-hidden p-6 duration-500 fill-mode-both">
         <div
           aria-hidden
-          className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full opacity-25 blur-3xl"
-          style={{ background: `hsl(${hue} 80% 55%)` }}
+          className="pointer-events-none absolute inset-x-0 top-0 h-[3px]"
+          style={{ background: `hsl(${hue} 70% 50%)` }}
         />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start">
           <ProfileImage src={m.profilePicUrl} name={m.fullName} size={96} hue={hue} />
@@ -351,19 +351,19 @@ export default function ProfileDetailPage() {
         >
           <div className="mb-3 flex items-center gap-4">
             <span className="flex items-center gap-1.5 text-xs text-muted">
-              <span className="h-2 w-2 rounded-full" style={{ background: "#7b6cff" }} />
+              <span className="h-2 w-2 rounded-full" style={{ background: "#0d99ff" }} />
               Reels
             </span>
             <span className="flex items-center gap-1.5 text-xs text-muted">
-              <span className="h-2 w-2 rounded-full" style={{ background: "#55c2f5" }} />
+              <span className="h-2 w-2 rounded-full" style={{ background: "#9747ff" }} />
               Posts
             </span>
           </div>
           <CompareBars
             data={weekdayData}
             series={[
-              { key: "reels", name: "Reels", color: "#7b6cff" },
-              { key: "posts", name: "Posts", color: "#55c2f5" },
+              { key: "reels", name: "Reels", color: "#0d99ff" },
+              { key: "posts", name: "Posts", color: "#9747ff" },
             ]}
             height={220}
           />

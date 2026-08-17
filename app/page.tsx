@@ -119,8 +119,8 @@ export default function DashboardPage() {
           <CompareBars
             data={audienceData}
             series={[
-              { key: "followers", name: "Followers", color: "#7b6cff" },
-              { key: "following", name: "Following", color: "#55c2f5" },
+              { key: "followers", name: "Followers", color: "#0d99ff" },
+              { key: "following", name: "Following", color: "#9747ff" },
             ]}
             scale={audienceScale}
             height={220}
@@ -135,8 +135,8 @@ export default function DashboardPage() {
           <CompareBars
             data={engagementData}
             series={[
-              { key: "likes", name: "Likes", color: "#7b6cff" },
-              { key: "comments", name: "Comments", color: "#55c2f5" },
+              { key: "likes", name: "Likes", color: "#0d99ff" },
+              { key: "comments", name: "Comments", color: "#9747ff" },
             ]}
             scale={engagementScale}
             height={220}
@@ -151,8 +151,8 @@ export default function DashboardPage() {
           <CompareBars
             data={avgData}
             series={[
-              { key: "avgLikes", name: "Avg likes", color: "#7b6cff" },
-              { key: "avgComments", name: "Avg comments", color: "#55c2f5" },
+              { key: "avgLikes", name: "Avg likes", color: "#0d99ff" },
+              { key: "avgComments", name: "Avg comments", color: "#9747ff" },
             ]}
             scale={avgScale}
             height={220}

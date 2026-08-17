@@ -10,7 +10,7 @@ const HOUR_TICKS = [0, 3, 6, 9, 12, 15, 18, 21, 24];
 
 export function GlobalReelTimes() {
   const c = useCssColors();
-  const accent = c.accent || "#7b6cff";
+  const accent = c.accent || "#0d99ff";
   const grid = c.line || "rgba(255,255,255,0.08)";
   const tick = {
     fill: c.muted || "#8d8da4",

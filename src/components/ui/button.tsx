@@ -5,19 +5,17 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default:
-          "bg-accent text-white shadow-[0_0_28px_-8px_var(--accent)] hover:bg-accent-strong hover:shadow-[0_0_36px_-6px_var(--accent)] active:scale-[0.98]",
+        default: "bg-accent text-white hover:bg-accent-strong",
         secondary:
-          "glass-soft text-foreground hover:border-line-strong hover:bg-raised/70 active:scale-[0.98]",
-        ghost: "text-muted hover:bg-raised/60 hover:text-foreground",
+          "glass-soft text-foreground hover:border-line-strong hover:bg-raised",
+        ghost: "text-muted hover:bg-raised hover:text-foreground",
         outline:
-          "border border-line bg-transparent text-foreground hover:border-line-strong hover:bg-raised/40",
-        destructive:
-          "bg-danger/90 text-white hover:bg-danger active:scale-[0.98]",
+          "border border-line bg-transparent text-foreground hover:border-line-strong hover:bg-raised/60",
+        destructive: "bg-danger text-white hover:bg-danger/90",
         link: "text-accent underline-offset-4 hover:underline",
       },
       size: {

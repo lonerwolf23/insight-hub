@@ -16,7 +16,7 @@ const NAV = [
 function Brand() {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-strong shadow-[0_0_24px_-6px_var(--accent)]">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
         <Radar className="h-5 w-5 text-white" />
       </div>
       <div className="leading-tight">
@@ -78,12 +78,8 @@ function DataStatus() {
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen">
-      {/* ambient glows */}
-      <div className="bg-glow bg-glow-accent -top-32 right-[-10%] h-[420px] w-[420px]" />
-      <div className="bg-glow bg-glow-cool bottom-[-15%] left-[-8%] h-[380px] w-[380px]" />
-
       {/* sidebar — desktop */}
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col gap-8 border-r border-line bg-background/60 px-5 py-6 backdrop-blur-2xl lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-20 hidden w-60 flex-col gap-8 border-r border-line bg-surface px-5 py-6 lg:flex">
         <Brand />
         <NavItems />
         <div className="flex-1" />
@@ -95,11 +91,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* top bar — mobile */}
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-background/70 px-5 py-3 backdrop-blur-2xl lg:hidden">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-surface px-5 py-3 lg:hidden">
         <Brand />
         <ThemeToggle />
       </header>
-      <div className="border-b border-line bg-background/40 px-5 py-2 lg:hidden">
+      <div className="border-b border-line bg-surface px-5 py-2 lg:hidden">
         <NavItems />
       </div>
 

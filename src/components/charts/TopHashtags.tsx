@@ -107,7 +107,7 @@ export function TopHashtags({ data, effectivenessData }: TopHashtagsProps) {
             maxBarSize={18}
           >
             {active.map((d, i) => (
-              <Cell key={d.tag} fill={(c[PALETTE[i % PALETTE.length]] as string) || "#7b6cff"} />
+              <Cell key={d.tag} fill={(c[PALETTE[i % PALETTE.length]] as string) || "#0d99ff"} />
             ))}
           </Bar>
         </BarChart>

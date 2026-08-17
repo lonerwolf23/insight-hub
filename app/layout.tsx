@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  colorScheme: "dark light",
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
-        <style>{`html{background:#08080e}`}</style>
+        <style>{`html{background:#f0f0f2}`}</style>
       </head>
       <body>
         <ThemeBootstrap />

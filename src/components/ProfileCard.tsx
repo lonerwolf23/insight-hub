@@ -28,27 +28,17 @@ export function ProfileCard({ metrics: m, hue = 250 }: ProfileCardProps) {
   return (
     <Link
       href={`/profiles/${profileSlug(m.username)}`}
-      className="glass group relative block overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:border-line-strong"
-      style={{
-        boxShadow: `0 0 0 1px var(--line)`,
-      }}
+      className="glass group relative block overflow-hidden p-5 transition-colors duration-150 hover:border-line-strong"
     >
-      {/* hue-tinted glow that blooms on hover */}
+      {/* hue-tinted identity strip */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-40"
-        style={{ background: `hsl(${hue} 80% 55%)` }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 h-0.5 opacity-70"
-        style={{
-          background: `linear-gradient(90deg, transparent, hsl(${hue} 80% 62%), transparent)`,
-        }}
+        className="pointer-events-none absolute inset-x-0 top-0 h-[3px]"
+        style={{ background: `hsl(${hue} 70% 50%)` }}
       />
 
       <div className="relative flex items-start gap-4">
-        <div className="transition-transform duration-300 group-hover:scale-105">
+        <div>
           <ProfileImage src={m.profilePicUrl} name={m.fullName} size={64} hue={hue} />
         </div>
         <div className="min-w-0 flex-1">

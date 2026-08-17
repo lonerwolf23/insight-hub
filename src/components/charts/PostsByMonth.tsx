@@ -19,7 +19,7 @@ interface PostsByMonthProps {
 
 export function PostsByMonth({ data }: PostsByMonthProps) {
   const c = useCssColors();
-  const color = c.good || "#37d79a";
+  const color = c.good || "#14ae5c";
   const grid = c.line || "rgba(255,255,255,0.08)";
   const tick = {
     fill: c.muted || "#8d8da4",
