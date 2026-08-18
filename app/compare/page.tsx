@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Crown, Hash } from "lucide-react";
+import { Check, Clock, Crown, Hash } from "lucide-react";
 import { useState } from "react";
 
 import { ChartCard } from "@/components/ChartCard";
@@ -53,7 +53,7 @@ export default function ComparePage() {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(username)) {
-        if (next.size <= 2) return prev;
+        if (next.size <= 1) return prev;
         next.delete(username);
       } else {
         next.add(username);
@@ -62,6 +62,12 @@ export default function ComparePage() {
     });
   };
   const selectAllAccounts = () => setSelected(new Set(allMetrics.map((m) => m.username)));
+
+  const hasEnoughSelected = metrics.length >= 2;
+  const reachOf = (m: ProfileMetrics) => m.avgLikes + m.avgComments;
+  const leader = hasEnoughSelected
+    ? metrics.reduce((best, m) => (reachOf(m) > reachOf(best) ? m : best), metrics[0])
+    : undefined;
 
   const audienceData = metrics.map((m) => ({
     label: `@${m.username}`,
@@ -124,7 +130,7 @@ export default function ComparePage() {
         <div className="glass flex flex-wrap items-center gap-2 p-3">
           {allMetrics.map((m, i) => {
             const isSelected = selected.has(m.username);
-            const isLocked = isSelected && selected.size <= 2;
+            const isLocked = isSelected && selected.size <= 1;
             return (
               <div
                 key={m.username}
@@ -142,7 +148,7 @@ export default function ComparePage() {
                   aria-pressed={isSelected}
                   title={
                     isLocked
-                      ? "At least 2 accounts must stay selected"
+                      ? "At least 1 account must stay selected"
                       : isSelected
                         ? "Remove from comparison"
                         : "Add to comparison"
@@ -178,6 +184,18 @@ export default function ComparePage() {
         </div>
       </div>
 
+      {!hasEnoughSelected && (
+        <div className="glass flex flex-col items-center gap-2 p-12 text-center">
+          <p className="text-sm font-semibold text-foreground">Select at least 2 accounts</p>
+          <p className="max-w-md text-xs leading-relaxed text-muted">
+            Pick one more account above to see the head-to-head leaderboards, charts, and
+            comparison table.
+          </p>
+        </div>
+      )}
+
+      {hasEnoughSelected && (
+        <>
       {/* rate-based leaderboards */}
       <div
         className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both"
@@ -228,6 +246,9 @@ export default function ComparePage() {
           />
         </div>
       </div>
+
+      {/* posting-time recommendation */}
+      {leader && <PostingTimeMatch metrics={metrics} leader={leader} />}
 
       {/* comparison charts */}
       <div
@@ -340,12 +361,141 @@ export default function ComparePage() {
           </table>
         </div>
       </div>
+        </>
+      )}
 
       {/* footer note */}
       <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
         <span className="h-1 w-1 rounded-full bg-accent" />
         Metrics computed from the scraped posts in all_profiles_20260812_141407.json
       </p>
+    </div>
+  );
+}
+
+function PostingTimeMatch({
+  metrics,
+  leader,
+}: {
+  metrics: ProfileMetrics[];
+  leader: ProfileMetrics;
+}) {
+  const reachOf = (m: ProfileMetrics) => m.avgLikes + m.avgComments;
+  const leaderReach = reachOf(leader);
+  const followers = metrics.filter((m) => m.username !== leader.username);
+
+  return (
+    <div
+      className="glass animate-in fade-in slide-in-from-bottom-3 p-5 duration-500 fill-mode-both"
+      style={{ animationDelay: "140ms" }}
+    >
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <Clock className="h-4 w-4 text-accent" />
+        <h3 className="font-display text-sm font-semibold tracking-tight">
+          When to post to chase similar reach
+        </h3>
+      </div>
+      <p className="mb-4 max-w-2xl text-xs leading-relaxed text-muted">
+        @{leader.username} gets the most engagement per post among your selection. Posting in its
+        peak window is the closest signal this data can offer for closing the reach gap — here&apos;s
+        that recommendation for every other account you&apos;re comparing.
+      </p>
+
+      <AccountTimeCard label="Leading reach" metrics={leader} reach={leaderReach} highlight />
+
+      <div className="mt-4 space-y-4">
+        {followers.map((target) => {
+          const targetReach = reachOf(target);
+          const multiplier = targetReach > 0 ? leaderReach / targetReach : 0;
+          const multiplierLabel =
+            multiplier >= 10 ? `${formatNumber(multiplier)}x` : `${multiplier.toFixed(1)}x`;
+
+          return (
+            <div key={target.username} className="grid gap-4 sm:grid-cols-2">
+              <AccountTimeCard label="Currently posting" metrics={target} reach={targetReach} />
+
+              <div className="rounded-xl border border-accent/30 bg-accent-soft/30 p-4">
+                {leader.peakHeatmapCell ? (
+                  <p className="text-sm text-foreground">
+                    Post around{" "}
+                    <span className="font-semibold text-accent-strong">
+                      {leader.peakHeatmapCell.dayLabel} {leader.peakHeatmapCell.hourLabel}
+                    </span>{" "}
+                    — that&apos;s @{leader.username}&apos;s peak window, where its posts pull{" "}
+                    {formatCompact(leader.peakHeatmapCell.avgEngagement)} avg engagement.
+                    {multiplier > 1.05 && (
+                      <>
+                        {" "}
+                        @{leader.username} averages {multiplierLabel} the engagement per post that
+                        @{target.username} does overall, so matching its timing is the best
+                        available shot at closing that gap.
+                      </>
+                    )}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted">
+                    @{leader.username} doesn&apos;t have enough posting history to pin down a peak
+                    time slot.
+                  </p>
+                )}
+                {target.peakHeatmapCell && leader.peakHeatmapCell && (
+                  <p className="mt-1.5 text-xs text-muted">
+                    For reference, @{target.username}&apos;s own current best slot is{" "}
+                    <span className="font-mono text-foreground">
+                      {target.peakHeatmapCell.dayLabel} {target.peakHeatmapCell.hourLabel}
+                    </span>
+                    .
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AccountTimeCard({
+  label,
+  metrics,
+  reach,
+  highlight,
+}: {
+  label: string;
+  metrics: ProfileMetrics;
+  reach: number;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-xl border p-4",
+        highlight ? "border-accent/30 bg-accent-soft/20" : "border-line bg-raised/20",
+      )}
+    >
+      <p className="label-mono mb-2 text-faint">{label}</p>
+      <div className="flex items-center gap-2.5">
+        <ProfileImage src={metrics.profilePicUrl} name={metrics.fullName} size={32} />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold leading-tight">{metrics.fullName}</p>
+          <p className="font-mono text-[11px] text-faint">@{metrics.username}</p>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center justify-between">
+        <span className="font-mono text-[11px] text-muted">Avg engagement / post</span>
+        <span className="font-mono text-xs font-semibold text-foreground">
+          {formatCompact(reach)}
+        </span>
+      </div>
+      {metrics.peakHeatmapCell ? (
+        <div className="mt-1.5 flex items-center justify-between">
+          <span className="font-mono text-[11px] text-muted">Peak day &amp; hour</span>
+          <span className="font-mono text-xs font-semibold text-foreground">
+            {metrics.peakHeatmapCell.dayLabel} {metrics.peakHeatmapCell.hourLabel}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }
