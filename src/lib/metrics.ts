@@ -114,6 +114,17 @@ export interface ProfileMetrics {
   captionMetrics: CaptionMetrics;
   commentToLikeRatio: number;
   topCommenters: CommenterSlice[];
+  // Reel-scoped "what drives reach" breakdown — same shapes as above,
+  // computed only from GraphVideo posts so formats aren't blended together.
+  reelCount: number;
+  nonReelCount: number;
+  reelSharePct: number;
+  avgReelEngagement: number;
+  avgNonReelEngagement: number;
+  reelHashtagCountBuckets: CaptionBucket[];
+  reelCaptionMetrics: CaptionMetrics;
+  reelHashtagEffectiveness: HashtagSlice[];
+  reelTopHashtags: HashtagSlice[];
 }
 
 const POST_TYPE_LABELS: Record<string, string> = {
@@ -420,6 +431,18 @@ function bucketize(
     });
 }
 
+function hashtagCountBucket(p: Post): string {
+  const n = p.hashtags.length;
+  if (n === 0) return "0 tags";
+  if (n <= 3) return "1–3 tags";
+  if (n <= 7) return "4–7 tags";
+  return "8+ tags";
+}
+
+function buildHashtagCountMetrics(posts: Post[]): CaptionBucket[] {
+  return bucketize(posts, hashtagCountBucket, ["0 tags", "1–3 tags", "4–7 tags", "8+ tags"]);
+}
+
 function buildCaptionMetrics(posts: Post[]): CaptionMetrics {
   return {
     length: bucketize(posts, captionLengthBucket, [
@@ -495,10 +518,23 @@ export function computeMetrics(profile: Profile): ProfileMetrics {
     .slice(0, 12)
     .map(([tag, count]) => ({ tag, count }));
 
-  const reelHourly = buildHourly(posts.filter(isReel));
-  const postHourly = buildHourly(posts.filter((p) => !isReel(p)));
+  const reelPosts = posts.filter(isReel);
+  const nonReelPosts = posts.filter((p) => !isReel(p));
+  const reelHourly = buildHourly(reelPosts);
+  const postHourly = buildHourly(nonReelPosts);
   const weekday = buildWeekday(posts);
   const heatmap = buildHeatmap(posts);
+
+  const avgEngagementOf = (list: Post[]) =>
+    list.length ? list.reduce((s, p) => s + engagementOf(p), 0) / list.length : 0;
+
+  const reelTagCounts = new Map<string, number>();
+  for (const p of reelPosts)
+    for (const tag of p.hashtags) reelTagCounts.set(tag, (reelTagCounts.get(tag) ?? 0) + 1);
+  const reelTopHashtags: HashtagSlice[] = [...reelTagCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12)
+    .map(([tag, count]) => ({ tag, count }));
 
   return {
     username: profile.username,
@@ -549,5 +585,14 @@ export function computeMetrics(profile: Profile): ProfileMetrics {
     captionMetrics: buildCaptionMetrics(posts),
     commentToLikeRatio: totalLikes > 0 ? (totalComments / totalLikes) * 100 : 0,
     topCommenters: buildTopCommenters(posts),
+    reelCount: reelPosts.length,
+    nonReelCount: nonReelPosts.length,
+    reelSharePct: analyzedPosts ? (reelPosts.length / analyzedPosts) * 100 : 0,
+    avgReelEngagement: avgEngagementOf(reelPosts),
+    avgNonReelEngagement: avgEngagementOf(nonReelPosts),
+    reelHashtagCountBuckets: buildHashtagCountMetrics(reelPosts),
+    reelCaptionMetrics: buildCaptionMetrics(reelPosts),
+    reelHashtagEffectiveness: buildHashtagEffectiveness(reelPosts),
+    reelTopHashtags,
   };
 }

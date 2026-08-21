@@ -1,19 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Clock, Crown, Hash } from "lucide-react";
+import { Check, Hash, Sparkles } from "lucide-react";
 import { useState } from "react";
 
 import { ChartCard } from "@/components/ChartCard";
 import { CompareBars } from "@/components/charts/CompareBars";
 import { ScaleToggle } from "@/components/charts/ScaleToggle";
+import { ReelDriverGrid } from "@/components/charts/ReelDriverGrid";
+import {
+  ContentMixCompare,
+  ReelHashtagLeadersCompare,
+  ReelTimingCompare,
+} from "@/components/charts/ReelDriverExtras";
 import { ProfileImage } from "@/components/ProfileImage";
 import { ChartCardsSkeleton, ErrorState } from "@/components/StateScreens";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProfileMetrics } from "@/lib/metrics";
 import { useProfiles } from "@/lib/use-profiles";
-import { formatCompact, formatNumber, formatPercent } from "@/lib/format";
+import { formatCompact, formatNumber } from "@/lib/format";
 import { profileSlug } from "@/lib/slugs";
 import { cn } from "@/lib/utils";
 
@@ -64,10 +70,6 @@ export default function ComparePage() {
   const selectAllAccounts = () => setSelected(new Set(allMetrics.map((m) => m.username)));
 
   const hasEnoughSelected = metrics.length >= 2;
-  const reachOf = (m: ProfileMetrics) => m.avgLikes + m.avgComments;
-  const leader = hasEnoughSelected
-    ? metrics.reduce((best, m) => (reachOf(m) > reachOf(best) ? m : best), metrics[0])
-    : undefined;
 
   const audienceData = metrics.map((m) => ({
     label: `@${m.username}`,
@@ -91,21 +93,23 @@ export default function ComparePage() {
       <div className="animate-in fade-in slide-in-from-bottom-3 flex flex-wrap items-end justify-between gap-4 duration-500 fill-mode-both">
         <div>
           <div className="flex items-center gap-3">
-            <p className="label-mono text-faint">Head-to-head</p>
+            <p className="label-mono text-faint">Reach drivers</p>
             <Badge variant="accent">
               {metrics.length} of {allMetrics.length} selected
             </Badge>
           </div>
           <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight">
-            Account{" "}
+            Why some reels{" "}
             <span className="bg-gradient-to-r from-accent via-accent-strong to-info bg-clip-text text-transparent">
-              comparison
+              reach further
             </span>
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            Pick any 2 or 3 accounts below to compare head-to-head. Raw totals favor whoever has
-            the biggest audience — the leaderboards below rank by rate instead, so a smaller
-            account can still come out on top.
+            This isn&apos;t a ranking of which account is &quot;better&quot; — follower counts
+            differ too much for that to mean anything. It&apos;s a side-by-side look at what each
+            account is doing with hashtags, posting time, caption length and style, and format
+            mix, so you can see which habits line up with more likes and comments on their own
+            reels.
           </p>
         </div>
       </div>
@@ -188,67 +192,60 @@ export default function ComparePage() {
         <div className="glass flex flex-col items-center gap-2 p-12 text-center">
           <p className="text-sm font-semibold text-foreground">Select at least 2 accounts</p>
           <p className="max-w-md text-xs leading-relaxed text-muted">
-            Pick one more account above to see the head-to-head leaderboards, charts, and
-            comparison table.
+            Pick one more account above to see the reach-driver breakdown, charts, and comparison
+            table.
           </p>
         </div>
       )}
 
       {hasEnoughSelected && (
         <>
-      {/* rate-based leaderboards */}
+      {/* why reels perform differently */}
       <div
-        className="animate-in fade-in slide-in-from-bottom-3 duration-500 fill-mode-both"
+        className="animate-in fade-in slide-in-from-bottom-3 space-y-4 duration-500 fill-mode-both"
         style={{ animationDelay: "120ms" }}
       >
-        <div className="mb-4 flex items-center gap-2">
-          <Crown className="h-4 w-4 text-accent" />
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-accent" />
           <h2 className="font-display text-sm font-semibold tracking-tight">
-            Who&apos;s leading, metric by metric
+            What&apos;s driving reel reach
           </h2>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <Leaderboard
-            title="Followers"
-            metrics={metrics}
-            value={(m) => m.followers}
-            format={formatCompact}
-          />
-          <Leaderboard
-            title="Engagement rate"
-            metrics={metrics}
-            value={(m) => m.engagementRate}
-            format={(v) => formatPercent(v, 2)}
-          />
-          <Leaderboard
-            title="Avg likes / post"
-            metrics={metrics}
-            value={(m) => m.avgLikes}
-            format={formatCompact}
-          />
-          <Leaderboard
-            title="Avg comments / post"
-            metrics={metrics}
-            value={(m) => m.avgComments}
-            format={formatCompact}
-          />
-          <Leaderboard
-            title="Likes per follower"
-            metrics={metrics}
-            value={(m) => m.likesPerFollower}
-            format={(v) => v.toFixed(2)}
-          />
-          <Leaderboard
-            title="Unique hashtags used"
-            metrics={metrics}
-            value={(m) => m.uniqueHashtags}
-            format={formatNumber}
-          />
-        </div>
-      </div>
 
-      {/* posting-time recommendation */}
-      {leader && <PostingTimeMatch metrics={metrics} leader={leader} />}
+        <ContentMixCompare metrics={metrics} hues={HUES} />
+
+        <ReelDriverGrid
+          metrics={metrics}
+          hues={HUES}
+          title="Hashtag count on reels"
+          description="Reels bucketed by how many hashtags they carried, with each account's average engagement per bucket — shows whether tagging heavier actually correlates with more reach for that specific account."
+          getBuckets={(m) => m.reelHashtagCountBuckets}
+        />
+
+        <ReelDriverGrid
+          metrics={metrics}
+          hues={HUES}
+          title="Caption length on reels"
+          description="Same idea for caption length — whether short punchy captions or long story-driven ones pull more engagement for each account."
+          getBuckets={(m) => m.reelCaptionMetrics.length}
+        />
+
+        <div className="grid gap-4 lg:grid-cols-3">
+          <ChartCard title="Question in caption" className="lg:col-span-1">
+            <BucketMini metrics={metrics} hues={HUES} buckets={(m) => m.reelCaptionMetrics.question} />
+          </ChartCard>
+          <ChartCard title="Call-to-action phrasing" className="lg:col-span-1">
+            <BucketMini metrics={metrics} hues={HUES} buckets={(m) => m.reelCaptionMetrics.cta} />
+          </ChartCard>
+          <ChartCard title="Emoji use" className="lg:col-span-1">
+            <BucketMini metrics={metrics} hues={HUES} buckets={(m) => m.reelCaptionMetrics.emoji} />
+          </ChartCard>
+        </div>
+
+        <ReelTimingCompare metrics={metrics} hues={HUES} />
+
+        <ReelHashtagLeadersCompare metrics={metrics} hues={HUES} />
+      </div>
 
       {/* comparison charts */}
       <div
@@ -367,191 +364,57 @@ export default function ComparePage() {
       {/* footer note */}
       <p className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-faint">
         <span className="h-1 w-1 rounded-full bg-accent" />
-        Metrics computed from the scraped posts in all_profiles_20260812_141407.json
+        Metrics computed from each account&apos;s scraped posts — reel-specific figures use only
+        GraphVideo posts
       </p>
     </div>
   );
 }
 
-function PostingTimeMatch({
+/** Compact two-or-three-bucket comparison (question / CTA / emoji) — one row per profile per bucket. */
+function BucketMini({
   metrics,
-  leader,
+  hues,
+  buckets,
 }: {
   metrics: ProfileMetrics[];
-  leader: ProfileMetrics;
+  hues: number[];
+  buckets: (m: ProfileMetrics) => { label: string; count: number; avgEngagement: number }[];
 }) {
-  const reachOf = (m: ProfileMetrics) => m.avgLikes + m.avgComments;
-  const leaderReach = reachOf(leader);
-  const followers = metrics.filter((m) => m.username !== leader.username);
-
   return (
-    <div
-      className="glass animate-in fade-in slide-in-from-bottom-3 p-5 duration-500 fill-mode-both"
-      style={{ animationDelay: "140ms" }}
-    >
-      <div className="mb-1 flex flex-wrap items-center gap-2">
-        <Clock className="h-4 w-4 text-accent" />
-        <h3 className="font-display text-sm font-semibold tracking-tight">
-          When to post to chase similar reach
-        </h3>
-      </div>
-      <p className="mb-4 max-w-2xl text-xs leading-relaxed text-muted">
-        @{leader.username} gets the most engagement per post among your selection. Posting in its
-        peak window is the closest signal this data can offer for closing the reach gap — here&apos;s
-        that recommendation for every other account you&apos;re comparing.
-      </p>
-
-      <AccountTimeCard label="Leading reach" metrics={leader} reach={leaderReach} highlight />
-
-      <div className="mt-4 space-y-4">
-        {followers.map((target) => {
-          const targetReach = reachOf(target);
-          const multiplier = targetReach > 0 ? leaderReach / targetReach : 0;
-          const multiplierLabel =
-            multiplier >= 10 ? `${formatNumber(multiplier)}x` : `${multiplier.toFixed(1)}x`;
-
-          return (
-            <div key={target.username} className="grid gap-4 sm:grid-cols-2">
-              <AccountTimeCard label="Currently posting" metrics={target} reach={targetReach} />
-
-              <div className="rounded-xl border border-accent/30 bg-accent-soft/30 p-4">
-                {leader.peakHeatmapCell ? (
-                  <p className="text-sm text-foreground">
-                    Post around{" "}
-                    <span className="font-semibold text-accent-strong">
-                      {leader.peakHeatmapCell.dayLabel} {leader.peakHeatmapCell.hourLabel}
-                    </span>{" "}
-                    — that&apos;s @{leader.username}&apos;s peak window, where its posts pull{" "}
-                    {formatCompact(leader.peakHeatmapCell.avgEngagement)} avg engagement.
-                    {multiplier > 1.05 && (
-                      <>
-                        {" "}
-                        @{leader.username} averages {multiplierLabel} the engagement per post that
-                        @{target.username} does overall, so matching its timing is the best
-                        available shot at closing that gap.
-                      </>
-                    )}
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted">
-                    @{leader.username} doesn&apos;t have enough posting history to pin down a peak
-                    time slot.
-                  </p>
-                )}
-                {target.peakHeatmapCell && leader.peakHeatmapCell && (
-                  <p className="mt-1.5 text-xs text-muted">
-                    For reference, @{target.username}&apos;s own current best slot is{" "}
-                    <span className="font-mono text-foreground">
-                      {target.peakHeatmapCell.dayLabel} {target.peakHeatmapCell.hourLabel}
-                    </span>
-                    .
-                  </p>
-                )}
-              </div>
+    <div className="space-y-4">
+      {metrics.map((m, i) => {
+        const hue = hues[i % hues.length];
+        const data = buckets(m).filter((b) => b.count > 0);
+        const max = Math.max(...data.map((b) => b.avgEngagement), 1);
+        const best = data.length ? data.reduce((a, b) => (b.avgEngagement > a.avgEngagement ? b : a)) : null;
+        return (
+          <div key={m.username}>
+            <span className="font-mono text-[10px] text-faint">@{m.username}</span>
+            <div className="mt-1.5 space-y-1.5">
+              {data.length === 0 && <p className="text-[10px] text-faint">Not enough reels.</p>}
+              {data.map((b) => (
+                <div key={b.label} className="flex items-center gap-2">
+                  <span className="w-24 shrink-0 truncate text-[10px] text-muted">{b.label}</span>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-raised/60">
+                    <div
+                      className="h-1.5 rounded-full"
+                      style={{
+                        width: `${Math.max((b.avgEngagement / max) * 100, 4)}%`,
+                        background: `hsl(${hue} 75% ${best && b.label === best.label ? 55 : 40}%)`,
+                        opacity: best && b.label === best.label ? 1 : 0.55,
+                      }}
+                    />
+                  </div>
+                  <span className="w-12 shrink-0 text-right font-mono text-[9px] text-foreground">
+                    {formatCompact(b.avgEngagement)}
+                  </span>
+                </div>
+              ))}
             </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function AccountTimeCard({
-  label,
-  metrics,
-  reach,
-  highlight,
-}: {
-  label: string;
-  metrics: ProfileMetrics;
-  reach: number;
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-xl border p-4",
-        highlight ? "border-accent/30 bg-accent-soft/20" : "border-line bg-raised/20",
-      )}
-    >
-      <p className="label-mono mb-2 text-faint">{label}</p>
-      <div className="flex items-center gap-2.5">
-        <ProfileImage src={metrics.profilePicUrl} name={metrics.fullName} size={32} />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold leading-tight">{metrics.fullName}</p>
-          <p className="font-mono text-[11px] text-faint">@{metrics.username}</p>
-        </div>
-      </div>
-      <div className="mt-3 flex items-center justify-between">
-        <span className="font-mono text-[11px] text-muted">Avg engagement / post</span>
-        <span className="font-mono text-xs font-semibold text-foreground">
-          {formatCompact(reach)}
-        </span>
-      </div>
-      {metrics.peakHeatmapCell ? (
-        <div className="mt-1.5 flex items-center justify-between">
-          <span className="font-mono text-[11px] text-muted">Peak day &amp; hour</span>
-          <span className="font-mono text-xs font-semibold text-foreground">
-            {metrics.peakHeatmapCell.dayLabel} {metrics.peakHeatmapCell.hourLabel}
-          </span>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function Leaderboard({
-  title,
-  metrics,
-  value,
-  format,
-}: {
-  title: string;
-  metrics: ProfileMetrics[];
-  value: (m: ProfileMetrics) => number;
-  format: (v: number) => string;
-}) {
-  const ranked = metrics
-    .map((m) => ({ m, v: value(m) }))
-    .sort((a, b) => b.v - a.v);
-  const max = ranked[0]?.v || 1;
-
-  return (
-    <div className="glass p-4">
-      <p className="label-mono mb-3 text-faint">{title}</p>
-      <div className="space-y-2.5">
-        {ranked.map(({ m, v }, i) => (
-          <div key={m.username} className="flex items-center gap-2.5">
-            {i === 0 ? (
-              <Crown className="h-3.5 w-3.5 shrink-0 text-warn" />
-            ) : (
-              <span className="w-3.5 shrink-0 text-center font-mono text-[10px] text-faint">
-                {i + 1}
-              </span>
-            )}
-            <span className="w-24 shrink-0 truncate font-mono text-[11px] text-muted" title={`@${m.username}`}>
-              @{m.username}
-            </span>
-            <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-raised/60">
-              <span
-                className="block h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.max(4, (v / max) * 100)}%`,
-                  background: `hsl(${HUES[i % HUES.length]} 75% 55%)`,
-                }}
-              />
-            </span>
-            <span
-              className={cn(
-                "w-16 shrink-0 text-right font-mono text-xs",
-                i === 0 ? "font-semibold text-foreground" : "text-muted",
-              )}
-            >
-              {format(v)}
-            </span>
           </div>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
